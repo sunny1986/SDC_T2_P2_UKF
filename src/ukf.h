@@ -59,14 +59,16 @@ public:
   VectorXd weights_;
 
   ///* State dimension
-  int n_x_;
+  int n_x;
 
   ///* Augmented state dimension
-  int n_aug_;
+  int n_aug;
 
   ///* Sigma point spreading parameter
-  double lambda_;
+  double lambda;
 
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z;
 
   /**
    * Constructor
