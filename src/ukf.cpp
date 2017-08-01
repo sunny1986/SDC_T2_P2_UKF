@@ -29,7 +29,7 @@ UKF::UKF() {
   std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 3;
+  std_yawdd_ = 1;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -45,9 +45,6 @@ UKF::UKF() {
 
   // Radar measurement noise standard deviation radius change in m/s
   std_radrd_ = 0.3;
-
-  // define spreading parameter
-  lambda = 3 - n_x;
 
   /**
   TODO:
@@ -78,6 +75,9 @@ UKF::UKF() {
   //create vector for weights
   weights_ = VectorXd(2*n_aug+1);
   
+  // define spreading parameter
+  lambda = 3 - n_x;  
+
   // set weights
   double weight_0 = lambda/(lambda+n_aug);
   weights_(0) = weight_0;
@@ -128,7 +128,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       float y = rho*sin(phi);
       
       // set the state vector
-      x_ << x,y,2,0.2,0.5;      
+      x_ << x,y,2,0.5,0.5;      
 
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
@@ -136,7 +136,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       Initialize state.
       */
       //set the state with the initial location and zero velocity
-      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1],2,0.2,0.5;      
+      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1],2,0.5,0.5;        
     }
 
   	time_us_ = meas_package.timestamp_;
@@ -146,7 +146,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     return;
 	
 	}
-	
 
 	//compute the time elapsed between the current and previous measurements
 
@@ -275,7 +274,7 @@ void UKF::Prediction(double delta_t) {
 
   //create mean predict state vector
   VectorXd x_pred = VectorXd(5);
-
+  
   //predicted state mean
   x_pred.fill(0.0);
   for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
