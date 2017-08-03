@@ -11,6 +11,7 @@ using std::vector;
  * Initializes Unscented Kalman filter
  */
 UKF::UKF() {
+
   is_initialized_ = false;
 
   // if this is false, laser measurements will be ignored (except during init)
@@ -26,7 +27,7 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3;
+  std_a_ = 1;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 1;
@@ -76,7 +77,7 @@ UKF::UKF() {
   weights_ = VectorXd(2*n_aug+1);
   
   // define spreading parameter
-  lambda = 3 - n_x;  
+  lambda = 3 - n_aug;  
 
   // set weights
   double weight_0 = lambda/(lambda+n_aug);
@@ -86,6 +87,18 @@ UKF::UKF() {
   for (int i = 1; i < 2*n_aug+1; i++) {  //2n+1 weights_    
     weights_(i) = weight;
   }
+  
+  // Used in UpdateLidarEKF function
+  // Init matrices
+  R_ = MatrixXd(2, 2);
+  H_ = MatrixXd(2, 5);
+  //measurement covariance matrix - laser
+  R_ << 0.0225, 0,
+  		0, 0.0225;
+
+  // measurement matrix - laser
+  H_ << 1, 0, 0, 0, 0,
+  		0, 1, 0, 0, 0;
 
 }
 
@@ -115,7 +128,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     */
     // first measurement
     cout << "UKF: " << endl;   
-
+    
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       /**
       Convert radar from polar to cartesian coordinates and initialize state.
@@ -128,7 +141,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       float y = rho*sin(phi);
       
       // set the state vector
-      x_ << x,y,2,0.5,0.5;      
+      x_ << x,y,0,0,0;      
 
     }
     else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
@@ -136,7 +149,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       Initialize state.
       */
       //set the state with the initial location and zero velocity
-      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1],2,0.5,0.5;        
+      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1],0,0,0;        
     }
 
   	time_us_ = meas_package.timestamp_;
@@ -165,16 +178,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
      * Update the state and covariance matrices.
    */
 	if (meas_package.sensor_type_ == MeasurementPackage::RADAR and use_radar_ == true) {		
-		cout << "RADAR" << endl;
+		//cout << "RADAR" << endl;
 		UpdateRadar(meas_package);
 	}
 	else if(meas_package.sensor_type_ == MeasurementPackage::LASER and use_laser_ == true){
-		cout << "LIDAR" << endl;
-		UpdateLidar(meas_package);
+		//cout << "LIDAR" << endl;
+		UpdateLidarEKF(meas_package);
 	}  
 	// print the output
-	cout << "x_ = " << x_ << endl;
-	cout << "P_ = " << P_ << endl;
+	//cout << "x_ = " << x_ << endl;
+	//cout << "P_ = " << P_ << endl;
 }
 
 /**
@@ -384,9 +397,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   //Kalman gain K;
   MatrixXd K = Tc * S.inverse();  
-  // sensor measurement
 
+  // sensor measurement
   z_ = meas_package.raw_measurements_;
+
   //residual
   VectorXd z_diff = z_ - z_pred;
 
@@ -398,6 +412,30 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S*K.transpose();
   /******************************* NIS Calculations *************************/
+}
+
+void UKF::UpdateLidarEKF(MeasurementPackage meas_package) {
+
+	//create vector for incoming lidar measurement
+  	VectorXd z_ = VectorXd(n_z-1);
+
+	// sensor measurement
+  	z_ = meas_package.raw_measurements_;
+  
+	VectorXd z_pred = H_ * x_;
+	VectorXd y = z_ - z_pred;
+	MatrixXd Ht = H_.transpose();
+	MatrixXd S = H_ * P_ * Ht + R_;
+	MatrixXd Si = S.inverse();
+	MatrixXd PHt = P_ * Ht;
+	MatrixXd K = PHt * Si;
+
+	//new estimate
+	x_ = x_ + (K * y);
+	long x_size = x_.size();
+	MatrixXd I = MatrixXd::Identity(x_size, x_size);
+	P_ = (I - K * H_) * P_;
+
 }
 
 /**
