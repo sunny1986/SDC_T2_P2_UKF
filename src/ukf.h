@@ -70,6 +70,12 @@ public:
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z;
 
+  // measurement matrix
+  MatrixXd H_;
+
+  // measurement covariance matrix
+  MatrixXd R_;
+
   /**
    * Constructor
    */
@@ -98,6 +104,8 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateLidar(MeasurementPackage meas_package);
+
+  void UpdateLidarEKF(MeasurementPackage meas_package);
 
   /**
    * Updates the state and the state covariance matrix using a radar measurement
