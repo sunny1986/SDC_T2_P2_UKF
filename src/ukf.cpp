@@ -82,7 +82,7 @@ UKF::UKF() {
   // set weights
   double weight_0 = lambda/(lambda+n_aug);
   weights_(0) = weight_0;
-  double weight = 0.5/(n_aug+lambda);
+  double weight = 0.5/(lambda+n_aug);
   
   for (int i = 1; i < 2*n_aug+1; i++) {  //2n+1 weights_    
     weights_(i) = weight;
@@ -251,8 +251,7 @@ void UKF::Prediction(double delta_t) {
 
     //predicted state values
     double px_p, py_p;
-    //std::cout << 0.5*nu_a*delta_t*delta_t * cos(yaw) << std::endl;
-    
+        
     //avoid division by zero
     if (fabs(yawd) > 0.001) {
         px_p = p_x + v/yawd * ( sin (yaw + yawd*delta_t) - sin(yaw));
@@ -301,7 +300,7 @@ void UKF::Prediction(double delta_t) {
   for (int i = 0; i < 2 * n_aug + 1; i++) {  //iterate over sigma points
 
     // state difference
-    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    VectorXd x_diff = Xsig_pred_.col(i) - x_pred;
     //angle normalization
     while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
     while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
