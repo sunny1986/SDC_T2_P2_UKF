@@ -183,7 +183,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	}
 	else if(meas_package.sensor_type_ == MeasurementPackage::LASER and use_laser_ == true){
 		//cout << "LIDAR" << endl;
-		UpdateLidarEKF(meas_package);
+		UpdateLidar(meas_package);			// UKF based calculations
+		//UpdateLidarEKF(meas_package);		// EKF based calculations : Since lidar calc are
+											//	linear, EKF equations can be used here too.
 	}  
 	// print the output
 	//cout << "x_ = " << x_ << endl;
@@ -414,6 +416,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 }
 
 void UKF::UpdateLidarEKF(MeasurementPackage meas_package) {
+
+	// This function is the same as the EKF equations of updatelidar function
 
 	//create vector for incoming lidar measurement
   	VectorXd z_ = VectorXd(n_z-1);
